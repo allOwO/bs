@@ -8,13 +8,17 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     setWindowTitle("单机版农作物管理系统");
     setWindowState(Qt::WindowMaximized);
+    setWindowIcon(QIcon(":/i/nzw.png"));
 //    setMinimumSize(1440,900);
 
     ui->addbn->setIcon(QIcon(":/icon/plus.png"));
     m_pCreateDb = new CreateDb;
     m_pCreateDb->initDB();
-    treeInit();
-
+    righttreemenuinit();//右键菜单初始化
+    operateType = Add;
+    firsttreeinit();//addtree窗口初始化
+    secondtreeinit();
+    treeInit();//初始树并显示，放到后边
 }
 
 MainWindow::~MainWindow()
@@ -22,8 +26,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 void MainWindow::close(){
-    QApplication* app;
-    app->exit(0);
+
 }
 
 void MainWindow::add(){

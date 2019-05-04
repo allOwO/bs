@@ -1,12 +1,15 @@
 ﻿#include "addtree.h"
 #include "ui_addtree.h"
 
-addtree::addtree(QWidget *parent) :
-    QWidget(parent),
+addtree::addtree(QDialog *parent) :
+    QDialog(parent),
     ui(new Ui::addtree)
 {
     ui->setupUi(this);
-    setFixedSize(440,120);
+    setFixedSize(390,100);
+    setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint);
+    connect(ui->okbn,SIGNAL(clicked()),this,SLOT(okbnaccepted()));
+    connect(ui->celbn,SIGNAL(clicked()),this,SLOT(celbnrejected()));
 }
 
 addtree::~addtree()
@@ -19,14 +22,19 @@ void addtree::cleardata(){
 }
 void addtree::closeEvent(QCloseEvent *event)
 {
-    clearData();
+    cleardata();
 }
+//点击完成后接收
 void addtree::okbnaccepted(){
+    qDebug()<<"okbnaccepted"<<endl;
     QString name=ui->lineEdit->text();
-    emit signalname(name);
+    emit signalsname(name);//传值，槽函数响应
     ui->lineEdit->setEnabled(true);
+    close();
 }
 void addtree::celbnrejected(){
+
+    qDebug()<<"celbnrejected"<<endl;
     ui->lineEdit->setEnabled(true);
     close();
 }

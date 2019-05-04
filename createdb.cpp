@@ -37,8 +37,9 @@ void CreateDb::initDB()
     else
     {
         qDebug()<< "no tree!"  << db.lastError();
-        query_OK=query.exec("CREATE TABLE tree (ID INTEGER primary key NOT NULL,"
-                   "name TEXT NOT NULL)");
+        query_OK=query.exec("CREATE TABLE tree ("
+                            "ID integer PRIMARY KEY,"
+                            "name TEXT(50) NOT NULL UNIQUE)");
         if(query_OK)
         {
             qDebug()<< "create tree success!";
@@ -48,7 +49,7 @@ void CreateDb::initDB()
             qDebug()<< "create tree fail!"  << db.lastError();
 
         }
-        query.exec("create table main(name varchar(50) NOT NULL,idfrom integer NOT NULL");
+        query.exec("create table main(name TEXT(50) NOT NULL,idfrom integer NOT NULL)");
     }
 }
 
@@ -79,9 +80,7 @@ QList<QStringList> CreateDb::treedata(){
     QSqlQuery query;
     query.exec("SELECT * FROM tree");
     QList<QStringList> treeinfo;
-    qDebug()<<"tredata"<<endl;
     while(query.next()){
-         qDebug()<<"treedata:"<<query.value(0).toString()<<endl;
          QStringList tmp;
          tmp << query.value(0).toString();//tree.ID
          tmp << query.value(1).toString();//tree.name
@@ -92,14 +91,13 @@ QList<QStringList> CreateDb::treedata(){
 
 QStringList CreateDb::maindata(QStringList tmp){
     QString sql=QString("SELECT name FROM main where idfrom=%1").arg(tmp[0]);
-    qDebug()<<sql<<endl;
     QSqlQuery query;
     bool ok=query.exec(sql);
-    qDebug()<<"maindata:"<<ok<<endl;
+//    qDebug()<<"maindata:"<<ok<<endl;
 
     QStringList ans;
     while(query.next()){
-        qDebug()<<"maindata:"<<query.value(0).toString()<<endl;
+//        qDebug()<<"maindata:"<<query.value(0).toString()<<endl;
         QString data;
         data=query.value(0).toString();
         ans.append(data);
@@ -107,11 +105,75 @@ QStringList CreateDb::maindata(QStringList tmp){
     return ans;
 }
 
-bool CreateDb::addfirstsql(QString& name)
+bool CreateDb::addfirstsql(QString name)
 {
-   QString sql=QString("INSERT INTO tree VALUES(NULL,'%1')").arg(name);
+   QString sql=QString("INSERT OR IGNORE INTO tree VALUES(NULL,'%1')").arg(name);
    QSqlQuery query;
    bool ok=query.exec(sql);
    return ok;
 }
+bool CreateDb::renamefirstsql(QString name,QString rename){
+    if(rename.size()==0||name.size()==0){
+        return false;
+    }
+    QString sql=QString("UPDATE tree set name='%1' where name='%2'").arg(rename).arg(name);
+    QString sqls=QString("SELECT count(*) FROM tree where name='%1'").arg(rename);
+    QSqlQuery query;
+    query.exec(sqls);
+    if (query.next()){
+        int count =query.value(0).toInt();
+//        qDebug()<<"renamesql "<<count<<endl;
+        if(count){
+            return false;
+        }
+    }
+    bool ok=query.exec(sql);
+    return ok;
+}
+bool CreateDb::deletefirstsql(QString name){
+    if(name.size()==0){
+        return false;
+    }
+    QString sql=QString("SELECT ID FROM tree where name='%1'").arg(name);
+    int id;
+    QSqlQuery query;
+    query.exec(sql);
+    if(query.next()){
+        id=query.value(0).toInt();
+    }
+    else{
+        return false;
+    }
+    QString sqls=QString("DELETE FROM tree WHERE ID=%1").arg(id);
+
+    bool ok= query.exec(sqls);
+    if(!ok){
+        return false;
+    }
+    return deletesecondsql(id);
+}
+bool CreateDb::addsecondsql(QString name){
+    QString sql=QString("INSERT OR IGNORE INTO main VALUES(NULL,'%1')").arg(name);
+    QSqlQuery query;
+    bool ok=query.exec(sql);
+    if(!ok)return ok;
+    QString Selectsql =QString("SELECT COUNT(*) FROM sqlite_master where type='table' and name='%1'").arg(name) ;
+    query.exec(Selectsql);
+
+    QString sqls=QString("CREATE TABLE %1 ( name TEXT(50) PRIMARY KEY NOT NULL,"
+                                                       "addtime TEXT(50) NOT NULL,"
+                                                       "shootime text(50) NOT NULL,"
+                                                       "place TEXT(50) NOT NULL,"
+                                                       "from TEXT(50) NOT NULL,"
+                                                       "region TEXT(50) NOT NULL)").arg(name);
+    ok=query.exec(sqls);
+    return ok;
+}
+bool CreateDb::deletesecondsql(int id){
+    return true;
+}
+bool CreateDb::deletesecondsql(QString name){
+    return true;
+}
+
 
