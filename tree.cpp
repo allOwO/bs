@@ -2,14 +2,11 @@
 #include "ui_mainwindow.h"
 
 void MainWindow::treeInit(){
-    ui->treeWidget->clear();
+    qDebug()<<"treeInit"<<endl;
     ui->treeWidget->setHeaderLabel("农作物列表");
     ui->treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->treeWidget,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(treemenuclicked(const QPoint&)));
     connect(ui->treeWidget,SIGNAL(itemClicked(QTreeWidgetItem* ,int )),this,SLOT(treeclicked(QTreeWidgetItem* ,int)));
-//    connect(ui->treeWidget,SIGNAL(:itemDoubleClicked(QTreeWidgetItem* ,int ),this,SLOT()));
-
-    treeshow();
 }
 //显示
 void MainWindow::treeshow()
@@ -26,19 +23,7 @@ void MainWindow::treeshow()
             item_main->setIcon(0,QIcon(":/i/nzw.png"));
         }
     }
-}
-
-
-void MainWindow::treeclicked(QTreeWidgetItem* item,int col){
-   qDebug()<<"treeclicked()"<<endl;
-//   qDebug()<<item->columnCount()<<endl;
-   qDebug()<<item->parent()<<endl;
-   qDebug()<<ui->treeWidget->currentItem()->type()<<endl;
-}
-
-
-void MainWindow::treemainclicked(QTreeWidgetItem* ,int){
-
+    ui->treeWidget->expandAll();//展开
 }
 //右键菜单
 //初始化
@@ -60,6 +45,7 @@ void MainWindow::righttreemenuinit(){
     renamesecond=new QAction("重命名农作物",this);
     renamesecond->setIcon(QIcon(":/i/redo.png"));
     firstree->addAction(addfirst);
+    firstree->addAction(addsecond);
     firstree->addAction(deletefirst);
     firstree->addAction(renamefirst);
     secondtree->addAction(addsecond);
@@ -86,10 +72,9 @@ void MainWindow::firstaddclicked(){
     }
 //    bool ok=m_pCreateDb->addfirstsql(first);
 }
-//添加返回处理
-void MainWindow::firstadd(QString name){
+void MainWindow::firstadd(QStringList name){
     if(operateType==Add){
-        bool ok=m_pCreateDb->addfirstsql(name);
+        bool ok=m_pCreateDb->addfirstsql(name.value(1));
         if(ok){
             QMessageBox::information(this ,tr("提示") , tr("添加成功!"));
         }
@@ -103,15 +88,19 @@ void MainWindow::firstadd(QString name){
 //目录右键删除
 void MainWindow::firstdeleteclicked(){
     QTreeWidgetItem* item=ui->treeWidget->currentItem();
-    QString first=item->text(0);
-    bool ok=m_pCreateDb->deletefirstsql(first);
-    if(ok){
-        QMessageBox::information(this ,"提示" , "删除成功!");
+    QMessageBox::StandardButton button = QMessageBox::question(this , "提示" ,"确定删除分类？");
+    if(button == QMessageBox::Yes){
+        QString first=item->text(0);
+        bool ok=m_pCreateDb->deletefirstsql(first);
+        if(ok){
+            QMessageBox::information(this ,"提示" , "删除成功!");
+        }
+        else{
+            QMessageBox::information(this ,"提示" , "删除失败!");
+        }
+        treeshow();
     }
-    else{
-        QMessageBox::information(this ,"提示" , "删除失败!");
-    }
-    treeshow();
+
 }
 //目录右键重命名
 void MainWindow::firstrenameclicked(){
@@ -124,19 +113,16 @@ void MainWindow::firstrenameclicked(){
         return;
     }
     else{
-       firstdlg->activateWindow();
-       firstdlg->setWindowTitle("重命名分类");
-       firstdlg->exec();
-
+        firstdlg->seteditdata(first);
     }
-    firstdlg->seteditdata(first);
+    firstdlg->activateWindow();
+    firstdlg->setWindowTitle("重命名分类");
+    firstdlg->exec();
 }
-void  MainWindow::firstrename(QString rename){
-    qDebug()<<"firstrename "<<endl;
+void  MainWindow::firstrename(QStringList name){
     if(operateType==Edit){
-        QString name=nameclicked;
         qDebug()<<"firstrename "<<name<<endl;
-        bool ok=m_pCreateDb->renamefirstsql(name,rename);
+        bool ok=m_pCreateDb->renamefirstsql(name.value(0),name.value(1));
         if(ok){
             QMessageBox::information(this ,"提示" , "添加成功!");
         }
@@ -156,9 +142,10 @@ if(seconddlg){
     seconddlg->exec();
 }
 }
-void  MainWindow::secondadd(QString name){
+void  MainWindow::secondadd(QStringList name){
     if(operateType==Add){
-        bool ok=m_pCreateDb->addfirstsql(name);
+        QStringList id=m_pCreateDb->mainonedata(name.value(1));
+        bool ok=m_pCreateDb->addsecondsql(id.value(0),name.value(1));
         if(ok){
             QMessageBox::information(this ,tr("提示") , tr("添加成功!"));
         }
@@ -169,23 +156,66 @@ void  MainWindow::secondadd(QString name){
     treeshow();
 }
 void MainWindow::seconddeleteclicked(){
-qDebug()<<"seconddeleteclicked"<<endl;
-}
-void MainWindow::secondrenameclicked(){
-qDebug()<<"secondrenameclicked"<<endl;
-}
-void  MainWindow::secondrename(QString name){
-qDebug()<<"secondrename"<<endl;
-}
-void MainWindow::treemenuclicked(const QPoint& p){
+    qDebug()<<"seconddeleteclicked"<<endl;
     QTreeWidgetItem* item=ui->treeWidget->currentItem();
-    nameclicked=item->text(0);
-    qDebug()<<"*item "<<(item->parent()==nullptr)<<endl;
-    if(item->parent()==nullptr){
-         firstree->exec(QCursor::pos());
+    QMessageBox::StandardButton button = QMessageBox::question(this , "提示" ,"确定删除这一条记录？");
+    if(button == QMessageBox::Yes){
+        QString second=item->text(0);
+        bool ok=m_pCreateDb->deletesecondsql(second);
+        if(ok){
+            QMessageBox::information(this ,"提示" , "删除成功!");
+        }
+        else{
+            QMessageBox::information(this ,"提示" , "删除失败!");
+        }
+        treeshow();
+    }
+
+
+}
+//农作物重命名
+void MainWindow::secondrenameclicked(){
+    operateType=Edit;
+    QTreeWidgetItem* item=ui->treeWidget->currentItem();
+    QString second=item->text(0);
+    if(second.isEmpty()){
+        QMessageBox::information(this, "提示" , "请选中需要重命名的分类");
+        return;
     }
     else{
-        secondtree->exec(QCursor::pos());
+        seconddlg->seteditdata(second);
+    }
+    seconddlg->activateWindow();
+    seconddlg->setWindowTitle("重命名农作物");
+    seconddlg->exec();
+}
+void  MainWindow::secondrename(QStringList name){
+    if(operateType==Edit){
+        bool ok=m_pCreateDb->renamesecondsql(name.value(0),name.value(1));
+        if(ok){
+            QMessageBox::information(this ,"提示" , "重命名成功!");
+        }
+        else{
+            QMessageBox::information(this ,"提示" , "重命名失败!");
+        }
+    }
+    treeshow();
+}
+//右键目录槽函数
+void MainWindow::treemenuclicked(const QPoint& p){
+    QTreeWidgetItem* item=ui->treeWidget->currentItem();
+    qDebug()<<"treemenuclicked"<<endl;
+    if(item!=nullptr){
+        if(item->parent()==nullptr){
+            fnameclicked=m_pCreateDb->treeonedata(item->text(0));
+            qDebug()<<"treemenuclicked!="<<fnameclicked<<endl;
+            firstree->exec(QCursor::pos());
+        }
+        else{
+            snameclicked=m_pCreateDb->mainonedata(item->text(0));
+            qDebug()<<"treemenuclicked=="<<snameclicked<<endl;
+            secondtree->exec(QCursor::pos());
+        }
     }
 
 }
@@ -195,17 +225,14 @@ void MainWindow::treemenuclicked(const QPoint& p){
 void MainWindow::firsttreeinit()
 {
     firstdlg=new addtree;
-    connect(firstdlg,SIGNAL(signalsname(QString)),this,SLOT(firstadd(QString)));
-    connect(firstdlg,SIGNAL(signalsname(QString)),this,SLOT(firstrename(QString)));
+    connect(firstdlg,SIGNAL(signalsname(QStringList)),this,SLOT(firstadd(QStringList)));
+    connect(firstdlg,SIGNAL(signalsname(QStringList)),this,SLOT(firstrename(QStringList)));
 
 }
 void MainWindow::secondtreeinit()
 {
     seconddlg=new addtree;
-    connect(seconddlg,SIGNAL(signalsname(QString)),this,SLOT(secondadd(QString)));
-    connect(seconddlg,SIGNAL(signalsname(QString)),this,SLOT(secondrename(QString)));
+    connect(seconddlg,SIGNAL(signalsname(QStringList)),this,SLOT(secondadd(QStringList)));
+    connect(seconddlg,SIGNAL(signalsname(QStringList)),this,SLOT(secondrename(QStringList)));
 }
-
-
-
 

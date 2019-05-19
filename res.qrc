@@ -9,5 +9,7 @@
         <file>i/save.png</file>
         <file>i/square.png</file>
         <file>i/nzw.png</file>
+        <file>i/info.png</file>
+        <file>i/info2.png</file>
     </qresource>
 </RCC>

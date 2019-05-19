@@ -12,17 +12,17 @@ class addtree : public QDialog
     Q_OBJECT
 
 public:
-    explicit addtree(QDialog *parent = nullptr);
+    explicit addtree(QWidget *parent = nullptr);
     ~addtree();
     void seteditdata(QString );
+    QString oldname;
 private:
     void closeEvent(QCloseEvent *event);
-    void cleardata();
 private slots:
     void okbnaccepted();
     void celbnrejected();
 signals:
-    void signalsname(QString);
+    void signalsname(QStringList);
 private:
     Ui::addtree *ui;
 };

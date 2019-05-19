@@ -4,9 +4,9 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-QT       += core gui sql
 
+QT       += core gui sql
+UI_DIR=./UI
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = bs
@@ -30,17 +30,19 @@ SOURCES += \
         mainwindow.cpp \
     createdb.cpp \
     tree.cpp \
-    addtree.cpp
+    addtree.cpp \
+    nzwadd.cpp
 
 HEADERS += \
         mainwindow.h \
     createdb.h \
-    addtree.h
+    addtree.h \
+    nzwadd.h
 
 FORMS += \
-        mainwindow.ui \
-    addui.ui \
-    addtree.ui
+    addtree.ui \
+    nzwadd.ui \
+    mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -50,5 +52,4 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     res.qrc
 
-DISTFILES += \
-    i/info.png
+DISTFILES +=

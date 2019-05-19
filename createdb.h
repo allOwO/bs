@@ -3,7 +3,13 @@
 
 #include <QList>
 #include <QStringList>
-
+#include <QVariantMap>
+#include<QDateTime>
+struct tabledata//数据传输结构体
+{
+   QString name,addtime,shootime,place,wherefrom,region;
+   QByteArray image;
+};
 class CreateDb
 {
 public:
@@ -12,13 +18,19 @@ public:
     bool addfirstsql(QString);
     bool renamefirstsql(QString,QString);
     bool deletefirstsql(QString);
-    bool addsecondsql(QString);
+    bool addsecondsql(QString,QString);
     bool renamesecondsql(QString,QString);
     bool deletesecondsql(QString);
     bool deletesecondsql(int);
     QList<QStringList> selectDataFromBase();
     QList<QStringList> treedata();
-    QStringList maindata(QStringList tmp);
+    QStringList maindata(QStringList);
+    QStringList mainonedata(QString);
+    QStringList treeonedata(QString);
+    QList<tabledata> tableline(QString);
+    bool addnzwimage(QVariantMap);
+    bool changenzwimage(QVariantMap);
+    bool deletenzwimage(QVariantMap);
 };
 
 #endif // CREATEDB_H

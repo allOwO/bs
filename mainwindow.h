@@ -7,8 +7,13 @@
 #include <QtDebug>
 #include <QMessageBox>
 #include <QTreeWidget>
+#include <QPixmap>
+#include <QLabel>
+#include <QComboBox>
+#include<QFileDialog>
 #include "createdb.h"
 #include "addtree.h"
+#include "nzwadd.h"
 #pragma execution_character_set("utf-8")
 namespace Ui {
 class MainWindow;
@@ -27,6 +32,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    QVariantMap tabledataturnMap(tabledata);
 private:
     Ui::MainWindow *ui;
     CreateDb *m_pCreateDb;
@@ -35,26 +41,40 @@ private:
     void DbCreatetable(QString);
     void create_table(QString);
     void treeshow();
+    void tableshow(QString);
+    void settabledata(tabledata);
+    void cleartabledata();
+    tabledata getrowdata();
+
     void treeInit();
     void righttreemenuinit();
     void firsttreeinit();
-    void secondtreeinit();
+    void secondtreeinit(); 
+    void tableinit();
+    void findinit();
+    void nzwaddinit();
 private slots:
     void treeclicked(QTreeWidgetItem* ,int);
-    void treemainclicked(QTreeWidgetItem* ,int);
-    void firstadd(QString);//dialog窗口 返回后处理
+
+    void firstadd(QStringList);//dialog窗口 返回后处理
     void firstaddclicked();
     void firstdeleteclicked();
-    void firstrename(QString);
+    void firstrename(QStringList);
     void firstrenameclicked();
-    void secondadd(QString);
+
+    void secondadd(QStringList);
     void secondaddclicked();
     void seconddeleteclicked();
-    void secondrename(QString);
+    void secondrename(QStringList);
     void secondrenameclicked();
+
     void treemenuclicked(const QPoint&);//右键点SLOT;
-    void add();
-    void close();
+    void addbnclicked();
+    void changeclicked();
+    void deleteclicked();
+    void takeoutclicked();
+    void addimage(QVariantMap);
+    void changeimage(QVariantMap);
 //tree右键菜单
 private:
     QMenu *firstree;
@@ -68,11 +88,15 @@ private:
     QMenu *blank;
 //  addtree
 public:
-    QString nameclicked;//被右键选中
+    QStringList fnameclicked,snameclicked;//被右键选中
+
+    QList<tabledata> tablelinedata;
 private:
     addtree *firstdlg;
     addtree *seconddlg;
+    nzwadd *nzwadddlg;
     OperateType operateType;
+    OperateType nzwtype;
 
 };
 #endif // MAINWINDOW_H
