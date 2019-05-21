@@ -144,8 +144,7 @@ if(seconddlg){
 }
 void  MainWindow::secondadd(QStringList name){
     if(operateType==Add){
-        QStringList id=m_pCreateDb->mainonedata(name.value(1));
-        bool ok=m_pCreateDb->addsecondsql(id.value(0),name.value(1));
+        bool ok=m_pCreateDb->addsecondsql(fnameclicked.value(0),name.value(1));
         if(ok){
             QMessageBox::information(this ,tr("提示") , tr("添加成功!"));
         }
@@ -208,12 +207,11 @@ void MainWindow::treemenuclicked(const QPoint& p){
     if(item!=nullptr){
         if(item->parent()==nullptr){
             fnameclicked=m_pCreateDb->treeonedata(item->text(0));
-            qDebug()<<"treemenuclicked!="<<fnameclicked<<endl;
             firstree->exec(QCursor::pos());
         }
         else{
             snameclicked=m_pCreateDb->mainonedata(item->text(0));
-            qDebug()<<"treemenuclicked=="<<snameclicked<<endl;
+            fnameclicked=m_pCreateDb->treeiddata(snameclicked.value(0));
             secondtree->exec(QCursor::pos());
         }
     }

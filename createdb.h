@@ -7,7 +7,7 @@
 #include<QDateTime>
 struct tabledata//数据传输结构体
 {
-   QString name,addtime,shootime,place,wherefrom,region;
+   QString name,addtime,shootime,place,wherefrom,region,imagesuffix;
    QByteArray image;
 };
 class CreateDb
@@ -22,12 +22,13 @@ public:
     bool renamesecondsql(QString,QString);
     bool deletesecondsql(QString);
     bool deletesecondsql(int);
-    QList<QStringList> selectDataFromBase();
     QList<QStringList> treedata();
     QStringList maindata(QStringList);
     QStringList mainonedata(QString);
     QStringList treeonedata(QString);
+    QStringList treeiddata(QString );
     QList<tabledata> tableline(QString);
+    QList<tabledata> findline(QString,int,QString);
     bool addnzwimage(QVariantMap);
     bool changenzwimage(QVariantMap);
     bool deletenzwimage(QVariantMap);

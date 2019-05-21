@@ -19,8 +19,8 @@
      <rect>
       <x>340</x>
       <y>70</y>
-      <width>1041</width>
-      <height>721</height>
+      <width>1051</width>
+      <height>751</height>
      </rect>
     </property>
    </widget>
@@ -96,7 +96,7 @@
      <enum>Qt::Horizontal</enum>
     </property>
     <widget class="QComboBox" name="cbox"/>
-    <widget class="QLineEdit" name="lineEdit">
+    <widget class="QLineEdit" name="findline">
      <property name="font">
       <font>
        <pointsize>12</pointsize>
@@ -119,14 +119,15 @@
      <x>0</x>
      <y>0</y>
      <width>1440</width>
-     <height>26</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_F">
     <property name="title">
      <string>文件(&amp;F)</string>
     </property>
-    <addaction name="outAction"/>
+    <addaction name="inpathaction"/>
+    <addaction name="outpathaction"/>
    </widget>
    <widget class="QMenu" name="menu_A">
     <property name="title">
@@ -137,9 +138,14 @@
    <addaction name="menu_A"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="outAction">
+  <action name="inpathaction">
    <property name="text">
-    <string>导出</string>
+    <string>导入目录</string>
+   </property>
+  </action>
+  <action name="outpathaction">
+   <property name="text">
+    <string>导出目录</string>
    </property>
   </action>
  </widget>

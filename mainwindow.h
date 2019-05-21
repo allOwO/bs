@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include<QFileDialog>
+#include <QBuffer>
 #include "createdb.h"
 #include "addtree.h"
 #include "nzwadd.h"
@@ -75,6 +76,11 @@ private slots:
     void takeoutclicked();
     void addimage(QVariantMap);
     void changeimage(QVariantMap);
+    void findclicked();
+    void imageclick();
+
+    void outpathclicked();
+    void inpathclicked();
 //tree右键菜单
 private:
     QMenu *firstree;
@@ -89,8 +95,8 @@ private:
 //  addtree
 public:
     QStringList fnameclicked,snameclicked;//被右键选中
-
     QList<tabledata> tablelinedata;
+    QString inpath,outpath;
 private:
     addtree *firstdlg;
     addtree *seconddlg;
@@ -100,3 +106,13 @@ private:
 
 };
 #endif // MAINWINDOW_H
+class ClickLabel :public QLabel{
+    Q_OBJECT
+public:
+    explicit ClickLabel(QWidget * parent = 0);
+    ~ClickLabel();
+private:
+    void mouseReleaseEvent(QMouseEvent *e);
+signals:
+    void clicked();
+};

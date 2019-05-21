@@ -16,8 +16,9 @@ public:
     void seteditdata(QVariantMap);
     void setadddata(QVariantMap);
     void closeEvent(QCloseEvent *event);
-    QString thisaddtime;
+    QString thisaddtime,thissuffix;
     QString thisname;
+    QString inpath;
 private:
     void cleardata();
 private slots:

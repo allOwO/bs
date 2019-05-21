@@ -6,6 +6,7 @@
 #include <QtDebug>
 #include <QString>
 #include <QPixmap>
+#include <QFileInfo>
 CreateDb::CreateDb(){
 
 }
@@ -44,29 +45,6 @@ void CreateDb::initDB()
     }
 }
 
-QList<QStringList> CreateDb::selectDataFromBase()
-{
-    QSqlQuery query("SELECT * FROM StuManager");
-
-    QList<QStringList> stuInfo;
-
-    while (query.next())
-    {
-        QStringList rowData ;
-
-        rowData <<query.value(2).toString();
-        rowData <<query.value(1).toString();
-        rowData <<query.value(3).toString();
-        rowData <<query.value(4).toString();
-        rowData <<query.value(5).toString();
-        rowData <<query.value(6).toString();
-        rowData <<query.value(7).toString();
-        rowData <<query.value(8).toString();
-
-        stuInfo.append(rowData);
-    }
-    return stuInfo;
-}
 QList<QStringList> CreateDb::treedata(){
     QSqlQuery query;
     query.exec("SELECT * FROM tree");
@@ -94,6 +72,17 @@ QStringList CreateDb::treeonedata(QString name)
     }
     return tmp;
 }
+QStringList CreateDb::treeiddata(QString id){
+    QStringList tmp;
+    QString sql=QString("SELECT * FROM tree where id='%1'").arg(id);
+    QSqlQuery query;
+    query.exec(sql);
+    while(query.next()){
+        tmp <<query.value(0).toString();//id||idfrom
+        tmp <<query.value(1).toString();//name
+    }
+    return tmp;
+}
 //查找子节点
 QStringList CreateDb::maindata(QStringList tmp){
     QString sql=QString("SELECT name FROM main where idfrom=%1").arg(tmp[0]);
@@ -116,17 +105,20 @@ QStringList CreateDb::mainonedata(QString name)
     QSqlQuery query;
     query.exec(sql);
     while(query.next()){
-        tmp <<query.value(0).toString();//name
-        tmp <<query.value(1).toString();//idfrom
+        tmp <<query.value(0).toString();//idfrom
+        tmp <<query.value(1).toString();//name
     }
+    qDebug()<<"mainonedata"<<name<<tmp.value(0)<<tmp.value(1)<<endl;
     return tmp;
 }
+
 bool CreateDb::addfirstsql(QString name)
 {
    QSqlQuery query;
    QString sql2=QString("SELECT count(*) FROM tree where name='%1'").arg(name);
    QString sql=QString("INSERT OR IGNORE INTO tree VALUES(NULL,'%1')").arg(name);
    query.exec(sql2);
+   qDebug()<<"addfirstsql"<<endl;
    if(query.next()){
        if(query.value(0).toInt()==1){
            return false;
@@ -172,20 +164,17 @@ bool CreateDb::addsecondsql(QString id,QString name){
     if(!ok)return ok;
     QString Selectsql =QString("SELECT COUNT(*) FROM sqlite_master where type='table' and name='%1'").arg(name) ;
     ok=query.exec(Selectsql);
-    if(query.next()&&query.value(0).toInt()!=0){
+    if(query.next()){
+        if(query.value(0).toInt()!=0)
             return ok;
     }
-    QString sqls=QString("CREATE TABLE %1 ( name TEXT(20)  NOT NULL,"
-                                                       "addtime TEXT(25) NOT NULL,"
-                                                       "shootime TEXT(25) NOT NULL,"
-                                                       "place TEXT(40) NOT NULL,"
-                                                       "wherefrom TEXT(20) NOT NULL,"
-                                                       "region TEXT(20) NOT NULL,image BLOB NOT NULL)").arg(name);
+    QString sqls=QString("CREATE TABLE %1 ( name TEXT(20)  NOT NULL,addtime TEXT(25) NOT NULL,shootime TEXT(15) NOT NULL,place TEXT(40) NOT NULL,wherefrom TEXT(20) NOT NULL,"
+                         "region TEXT(20) NOT NULL,imagesuffix TEXT(5) NOT NULL,image BLOB NOT NULL)").arg(name);
     ok=query.exec(sqls);
+//    qDebug()<<"addsecondsql 2::"<<sqls<<endl;
     if(!ok){
         query.exec(QString("DROP TABLE %1").arg(name));
     }
-//     qDebug()<<"addsecondsql 2::"<<ok<<endl;
     return ok;
 }
 bool CreateDb::renamesecondsql(QString name,QString rename){
@@ -243,11 +232,56 @@ QList<tabledata> CreateDb::tableline(QString name){
                             query.value(3).toString(),
                             query.value(4).toString(),
                             query.value(5).toString(),
-                            query.value(6).toByteArray()};
+                            query.value(6).toString(),
+                            query.value(7).toByteArray()};
             tmp.append(data);
 //            qDebug()<< "tableline"<<data.addtime<<endl;
         }
     }
+    return tmp;
+}
+QList<tabledata> CreateDb::findline(QString name,int num,QString find){
+    QString finds;
+    QList<tabledata> tmp;
+    QSqlQuery query;
+    switch(num)
+    {
+    case 0:
+    {
+        finds="addtime";
+         break;
+    }
+    case 1:{
+        finds="shootime";
+         break;
+    }
+    case 2:
+    {
+        finds="place";
+        break;
+    }
+    case 3:
+    {
+        finds="addtime";
+        break;
+    }
+    default:
+        break;
+    }
+    QString sql1=QString("SELECT * FROM %1 WHERE %2 LIKE'%%3%'").arg(name).arg(finds).arg(find);
+    qDebug()<<sql1<<endl;
+    if(query.exec(sql1))
+        while(query.next()){
+            tabledata data{ query.value(0).toString(),
+                            query.value(1).toString(),
+                            query.value(2).toString(),
+                            query.value(3).toString(),
+                            query.value(4).toString(),
+                            query.value(5).toString(),
+                            query.value(6).toString(),
+                            query.value(7).toByteArray()};
+            tmp.append(data);
+        }
     return tmp;
 }
 
@@ -259,7 +293,7 @@ bool CreateDb::addnzwimage(QVariantMap info)
     QString region=info.value("region").toString();
     QString from=info.value("from").toString();
     QString path=info.value("path").toString();
-    QString addtime;
+    QString imagesuffix,addtime;
     QByteArray image;
     if(path.size()==0){
             return false;
@@ -272,16 +306,19 @@ bool CreateDb::addnzwimage(QVariantMap info)
             return false;
         }
         image=imagefile.readAll();
+        imagefile.close();
+        QFileInfo filename(path);
+        imagesuffix=filename.suffix();
     }
     addfirstsql(from);
     QString id=treeonedata(from).value(0);
     addsecondsql(id,name);
     QSqlQuery query;
-    QString sql=QString("INSERT INTO %1 VALUES('%1','%2','%3','%4','%5','%6',").arg(name).arg(addtime).arg(shoot).arg(place).arg(from).arg(region);
+    QString sql=QString("INSERT INTO %1 VALUES('%1','%2','%3','%4','%5','%6','%7',").arg(name).arg(addtime).arg(shoot).arg(place).arg(from).arg(region).arg(imagesuffix);
     query.prepare(sql+":image)");
     query.bindValue(":image",image);
     bool ok=query.exec();
-    qDebug()<<"addnzwimage "<<ok<<endl;
+    qDebug()<<"addnzwimage "<<sql<<endl;
     return ok;
 }
 
@@ -292,6 +329,7 @@ bool CreateDb::changenzwimage(QVariantMap info){
     QString place=info.value("place").toString();
     QString region=info.value("region").toString();
     QString from=info.value("from").toString();
+    QString suffix=info.value("imagesuffix").toString();
     QString addtime=info.value("addtime").toString();
     QString oldname=info.value("oldname").toString();
     qDebug()<<name<<" changenzwimage  "<<oldname<<endl;
@@ -303,25 +341,28 @@ bool CreateDb::changenzwimage(QVariantMap info){
         QString id=treeonedata(from).value(0);
         addsecondsql(id,name);
 
-        QSqlQuery query;
+        QSqlQuery query,query1;
         QString sql2=QString("UPDATE  %1 set name='%1',shootime='%2',place='%3',wherefrom='%4',region='%5' where addtime='%6'").arg(oldname).arg(shoot).arg(place).arg(from).arg(region).arg(addtime);
-        qDebug()<<"changenzwimage f"<<sql2<<endl;
+
         if(name!=oldname){
             QString sql_sel=QString("SELECT * FROM %1 where addtime='%2'").arg(oldname).arg(addtime);
-            QString sql_in=QString("INSERT INTO %1 VALUES('%1','%2','%3','%4','%5','%6',").arg(name).arg(addtime).arg(shoot).arg(place).arg(from).arg(region);
+            QString sql_in=QString("INSERT INTO %1 VALUES('%1','%2','%3','%4','%5','%6','%7',").arg(name).arg(addtime).arg(shoot).arg(place).arg(from).arg(region).arg(suffix);
 
             query.exec(sql_sel);
             query.next();
-            QByteArray image=query.value(6).toByteArray();
-            query.prepare(sql_in+":image)");
-            query.bindValue(":image",image);
+            QByteArray image=query.value(7).toByteArray();
+            qDebug()<<"changenzwimage f"<<sql2<<name<<oldname<<endl;
+
+            query1.prepare(sql_in+":image)");
+            query1.bindValue(":image",image);
+            ok=query1.exec();
             QVariantMap olddata;
             olddata.insert("name",oldname);
             olddata.insert("addtime",addtime);
             deletenzwimage(olddata);
         }
         else{
-            query.exec(sql2);//名称没变，更新
+            ok=query.exec(sql2);//名称没变，更新
         }
     qDebug()<<"changenzwimage s"<<ok<<endl;
     return ok;

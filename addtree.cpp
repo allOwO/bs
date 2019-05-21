@@ -24,7 +24,6 @@ void addtree::closeEvent(QCloseEvent *event)
 }
 //点击完成后接收
 void addtree::okbnaccepted(){
-    qDebug()<<"okbnaccepted"<<endl;
     QStringList name;
     name.append(oldname);
     name.append(ui->lineEdit->text());

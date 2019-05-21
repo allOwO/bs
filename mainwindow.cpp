@@ -16,6 +16,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_pCreateDb->initDB();
     righttreemenuinit();//右键菜单初始化
     operateType = Add;
+    inpath="./";
+    outpath="./";
     firsttreeinit();//addtree窗口初始化
     secondtreeinit();
     nzwaddinit();//图像添加窗口初始化
@@ -35,6 +37,7 @@ void MainWindow::treeclicked(QTreeWidgetItem* item,int col){
    if(item!=nullptr){
        if(item->parent()!=nullptr){
            snameclicked=m_pCreateDb->mainonedata(item->text(0));
+           fnameclicked=m_pCreateDb->treeiddata(snameclicked.value(0));
            tableshow(item->text(0));
        }
        else{
@@ -44,13 +47,42 @@ void MainWindow::treeclicked(QTreeWidgetItem* item,int col){
 }
 void MainWindow::tableshow(QString name){
    cleartabledata();
-   QList<tabledata> line=m_pCreateDb->tableline(name);
+   int num=ui->cbox->currentIndex();
+   QString findstr=ui->findline->text();
+   QList<tabledata> line;
+   if(findstr.size()==0){
+        line=m_pCreateDb->tableline(name);
+   }
+   else{
+        line=m_pCreateDb->findline(name,num,findstr);
+   }
+   if(num==0){
+       qSort(line.begin(),line.end(),[](const tabledata &s1,const tabledata &s2){return s1.addtime<s2.addtime;});
+   }
+   else if(num==1){
+       qSort(line.begin(),line.end(),[](const tabledata &s1,const tabledata &s2){return s1.shootime<s2.shootime;});
+   }
+   else if(num==2){
+       qSort(line.begin(),line.end(),[](const tabledata &s1,const tabledata &s2){return s1.place<s2.place;});
+   }
+   else{
+       qSort(line.begin(),line.end(),[](const tabledata &s1,const tabledata &s2){return s1.region<s2.region;});
+   }
    tablelinedata=line;//当前列表保存
    if(!line.isEmpty()){
-       auto it=line.begin();
-       for(;it!=line.end();it++){
+       ui->findbn->setEnabled(true);
+       ui->takeout->setEnabled(true);
+       ui->changebn->setEnabled(true);
+       ui->deletebn->setEnabled(true);
+       for(auto it=line.begin();it!=line.end();it++){
                 settabledata(*it);
       }
+   }
+   else{
+       ui->findbn->setEnabled(false);
+       ui->takeout->setEnabled(false);
+       ui->changebn->setEnabled(false);
+       ui->deletebn->setEnabled(false);
    }
 }
 void MainWindow::settabledata(tabledata data){
@@ -63,13 +95,16 @@ void MainWindow::settabledata(tabledata data){
     label1->setFont(QFont( "Microsoft YaHei", 12,50));
     ui->tableWidget->setCellWidget(row,0,label1);
 
-    QPixmap image;
-    image.loadFromData(data.image);
-    QPixmap imagesmall=image.scaled(600,397, Qt::KeepAspectRatio/*, Qt::SmoothTransformation*/);
+    QImage image2,image;
+    image2.loadFromData(data.image);
+    image=image2.scaled(600,397, Qt::KeepAspectRatio);
+//    QPixmap image;
+//    image.loadFromData(data.image);
+//    QPixmap imagesmall=image.scaled(600,397, Qt::KeepAspectRatio/*, Qt::SmoothTransformation*/);
     QLabel *label2=new QLabel;
     label2->resize(600,400);
     label2->setAlignment(Qt::AlignCenter);
-    label2->setPixmap(imagesmall);
+    label2->setPixmap(QPixmap::fromImage(image));
     ui->tableWidget->setCellWidget(row,1,label2);
 }
 void MainWindow::cleartabledata(){
@@ -101,7 +136,10 @@ void MainWindow::tableinit(){
     connect(ui->addbn,SIGNAL(clicked()),this,SLOT(addbnclicked()));
     connect(ui->changebn,SIGNAL(clicked()),this,SLOT(changeclicked()));
     connect(ui->takeout,SIGNAL(clicked()),this,SLOT(takeoutclicked()));
-    connect(ui->deletebn,SIGNAL(clicked()),this,SLOT(deleteclicked()));
+    connect(ui->deletebn,SIGNAL(clicked()),this,SLOT(deleteclicked())); 
+    connect(ui->tableWidget,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(imageclick()));
+    connect(ui->inpathaction,SIGNAL(triggered()),this,SLOT(inpathclicked()));
+    connect(ui->outpathaction,SIGNAL(triggered()),this,SLOT(outpathclicked()));
 }
 void MainWindow::findinit(){
     qDebug()<<"findinit"<<endl;
@@ -109,6 +147,7 @@ void MainWindow::findinit(){
     ui->cbox->addItem("拍摄时间");
     ui->cbox->addItem("地点");
     ui->cbox->addItem("拍摄角度");
+    connect(ui->findbn,SIGNAL(clicked()),this,SLOT(findclicked()));
 }
 void MainWindow::nzwaddinit(){
     nzwadddlg=new nzwadd;
@@ -162,8 +201,12 @@ void MainWindow::deleteclicked(){
           QMessageBox::information(this,"提示","请选择需要编辑的指针");
           return ;
     }
-
-//    m_pCreateDb->deletenzwimage();
+    QMessageBox::StandardButton button = QMessageBox::question(this , "提示" ,"确定删除这一条记录？");
+    if(button == QMessageBox::Yes){
+        m_pCreateDb->deletenzwimage(tabledataturnMap(thislinedata));
+    }
+    treeshow();
+    tableshow(thislinedata.name);
 }
 //tabledata转换成Map
 QVariantMap MainWindow::tabledataturnMap(tabledata data){
@@ -175,11 +218,35 @@ QVariantMap MainWindow::tabledataturnMap(tabledata data){
     info.insert("region",data.region);
     info.insert("from",data.wherefrom);
     info.insert("image",data.image);
+    info.insert("imagesuffix",data.imagesuffix);
     return info;
 }
 void MainWindow::takeoutclicked(){
-    QString savefilepath=QFileDialog::getExistingDirectory(this,"选择保存路径","./");
-//    QString saveFileName=QFileDialog::getSaveFileName(this,"保存到",QDir::currentPath(),"");
+    if(tablelinedata.isEmpty()==false){
+        QString savefilepath=QFileDialog::getExistingDirectory(this,"选择保存路径",outpath);
+        if(savefilepath.size()==0){
+            return ;
+        }
+        bool ok=false;
+        auto it=tablelinedata.begin();
+        for(;it!=tablelinedata.end();it++)
+        {
+            QImage image;
+            image.loadFromData((*it).image);
+            //路径中不能有冒号
+            QString path=QString("%1/%2%3-%4.%5").arg(savefilepath).arg((*it).shootime).arg((*it).name).arg((*it).addtime.replace(" ","").replace(":","")).arg((*it).imagesuffix);
+            qDebug()<<"takeout2"<<(*it).imagesuffix<<path<<endl;
+            ok=image.save(path);
+            if(!ok){
+                QMessageBox::information(this,"提示","导出失败");
+                return;
+            }
+        }
+        if(ok){
+            QMessageBox::information(this,"提示","导出成功");
+        }
+
+    }
 }
 //添加窗口返回后处理
 void MainWindow::addimage(QVariantMap info){
@@ -200,14 +267,67 @@ void MainWindow::changeimage(QVariantMap info){
     qDebug()<<"changeimage "<<endl;
     if(nzwtype==Edit){
         bool ok= m_pCreateDb->changenzwimage(info);
-//        if(ok){
-//            QMessageBox::information(this,"提示","修改成功");
-//        }
-//        else{
-//            QMessageBox::information(this,"提示","修改失败");
-//        }
+        if(ok){
+            QMessageBox::information(this,"提示","修改成功");
+        }
+        else{
+            QMessageBox::information(this,"提示","修改失败");
+        }
     }
     treeshow();
     tableshow(info.value("name").toString());
 }
+void MainWindow::findclicked(){
+    tableshow(snameclicked.value(1));
+}
+void MainWindow::imageclick(){
+    qDebug()<<"imageclick"<<endl;
+    tabledata thislinedata=getrowdata();
+    if(tablelinedata.isEmpty()==false){
+        QString imagename=QString("%1%2-%3.%4").arg(thislinedata.name).arg(thislinedata.shootime).arg(thislinedata.addtime.replace(" ","").replace(":","")).arg(thislinedata.imagesuffix);
+        QString savefilepath=QFileDialog::getSaveFileName(this,"选择保存路径",outpath+"/"+imagename,"*."+thislinedata.imagesuffix);
+        if(savefilepath.size()==0){
+            return;
+        }
+        bool ok=false;
+        auto it=tablelinedata.begin();
+        for(;it!=tablelinedata.end();it++)
+        {
+            QImage image;
+            image.loadFromData(thislinedata.image);
+            //路径中不能有冒号
+            qDebug()<<"takeout2"<<(*it).imagesuffix<<savefilepath<<endl;
+            ok=image.save(savefilepath);
+            if(!ok){
+                QMessageBox::information(this,"提示","导出失败");
+                return;
+            }
+        }
+        if(ok){
+            QMessageBox::information(this,"提示","导出成功");
+        }
 
+    }
+}
+void MainWindow::inpathclicked(){
+    QString savefilepath=QFileDialog::getExistingDirectory(this,"选择保存路径",inpath);
+    if(savefilepath.size()!=0){
+        inpath=savefilepath;
+        QFile file("inpath.txt");
+        file.open(QIODevice::WriteOnly);
+        QTextStream in(&file);
+        in<<inpath;
+        file.close();
+    }
+}
+void MainWindow::outpathclicked(){
+    QString savefilepath=QFileDialog::getExistingDirectory(this,"选择保存路径",outpath);
+    if(savefilepath.size()!=0){
+        outpath=savefilepath;
+        QFile file("outpath.txt");
+        file.open(QIODevice::WriteOnly);
+        QTextStream in(&file);
+        in<<outpath;
+        file.close();
+    }
+}

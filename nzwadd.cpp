@@ -40,6 +40,7 @@ void nzwadd::okbnaccepted(){
     info.insert("from",from);
     info.insert("path",path);
     info.insert("oldname",thisname);
+    info.insert("iamgesuffix",thissuffix);
     if(thisaddtime.size()>0)
         info.insert("addtime",thisaddtime);
     emit emitadd(info);//传值，槽函数响应
@@ -60,9 +61,10 @@ void nzwadd::seteditdata(QVariantMap info){
     ui->leregion->setText(info.value("region").toString());
     ui->path->setEnabled(false);
     ui->path->setStyleSheet("background-color: #BEBEBE;");//设置样式浅灰色不可选取
+    ui->toolbn->setEnabled(false);//工具按钮不可点击
     thisaddtime=info.value("addtime").toString();
+    thissuffix=info.value("iamgesuffix").toString();
     thisname=info.value("name").toString();
-    ui->toolbn->setDisabled(true);//工具按钮不可点击
 }
 void nzwadd::setadddata(QVariantMap info){
     ui->lename->setText(info.value("name").toString());
@@ -70,7 +72,11 @@ void nzwadd::setadddata(QVariantMap info){
 }
 
 void nzwadd::toolclicked(){
- QString imagepath=QFileDialog::getOpenFileName(this,"打开图像","/","图片(*.png *.jpg *.jpeg *.bmp)");
+    QFile file("inpath.txt");
+    file.open(QIODevice::WriteOnly);
+    QByteArray ba=file.readLine();
+    QString inpath(ba);
+    QString imagepath=QFileDialog::getOpenFileName(this,"打开图像",inpath,"图片(*.png *.jpg *.jpeg *.bmp)");
  ui->path->setText(imagepath);
 }
 
@@ -82,4 +88,9 @@ void nzwadd::closeEvent(QCloseEvent *event)
      ui->leplace->clear();
      ui->path->clear();
      ui->leregion->clear();
+     ui->lefrom->setEnabled(true);
+     ui->lefrom->setStyleSheet("background-color: white;");
+     ui->path->setEnabled(true);
+     ui->path->setStyleSheet("background-color: white;");
+     ui->toolbn->setEnabled(true);
 }
